@@ -1,0 +1,8 @@
+opencv-python
+openai
+pygame
+sounddevice
+SpeechRecognition
+gTTS
+scipy
+gpiozero
