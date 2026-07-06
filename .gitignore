@@ -1,0 +1,25 @@
+# Secrets - never commit these
+*.json
+!package.json
+*.pem
+*.key
+.env
+.env.*
+
+# Generated/runtime files
+temp.jpg
+run.log
+*.log
+
+# Pretrained model weights (download separately)
+*.pt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
