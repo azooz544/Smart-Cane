@@ -63,8 +63,8 @@ Before running this project, make sure you have the following:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd <your-repo-name>
+git clone https://github.com/azooz544/Smart-Cane.git
+cd Smart-Cane
 ```
 
 ### 2. Create and activate a virtual environment (recommended)
@@ -104,7 +104,7 @@ export GITHUB_TOKEN="your_github_pat_here"
 ### 5. Run the application
 
 ```bash
-python gemini.py
+python main.py
 ```
 
 ---
@@ -139,14 +139,56 @@ The live video window displays:
 ## Project Structure
 
 ```
-Smart Cane/
-├── gemini.py             # Main application entry point
-├── interactive_cane.py   # Alternate/experimental interactive architecture
-├── smart_talk_ai.py       # Standalone text-based AI chat prototype
-├── yolov8n.pt             # (Optional) YOLOv8 nano weights for local object detection experiments
+Smart-Cane/
+├── main.py                     # Application entry point
+├── requirements.txt            # Python dependencies
 ├── .gitignore
-└── README.md
+├── README.md
+│
+├── src/                        # Core application modules
+│   ├── __init__.py
+│   ├── config.py               # Central configuration (all tunable parameters)
+│   │
+│   ├── ai/                     # AI vision and language processing
+│   │   ├── __init__.py
+│   │   ├── client.py           # OpenAI client factory
+│   │   └── vision.py           # Frame analysis and scene description
+│   │
+│   ├── hardware/               # Hardware abstraction layer
+│   │   ├── __init__.py
+│   │   ├── ultrasonic.py       # HC-SR04 ultrasonic distance sensor
+│   │   └── button.py           # Physical push-button trigger
+│   │
+│   ├── speech/                 # Speech synthesis and recognition
+│   │   ├── __init__.py
+│   │   ├── speaker.py          # Text-to-Speech (gTTS + pygame)
+│   │   └── listener.py         # Voice recording and transcription
+│   │
+│   └── ui/                     # User interface
+│       ├── __init__.py
+│       └── overlay.py          # On-screen status overlay (OpenCV)
+│
+└── experiments/                # Archived prototypes (not production code)
+    ├── README.md
+    ├── gemini.py               # Original monolithic script
+    ├── interactive_cane.py     # Gemini/Vertex AI variant
+    └── smart_talk_ai.py        # Text-only chat prototype
 ```
+
+---
+
+## Configuration
+
+All tunable parameters are centralized in `src/config.py`:
+
+| Parameter | Default | Description |
+|---|---|---|
+| `MODEL` | `gpt-4o-mini` | AI model identifier |
+| `MAX_RESPONSE_TOKENS` | `120` | Maximum tokens in AI response |
+| `OBSTACLE_THRESHOLD_CM` | `120.0` | Distance (cm) that triggers obstacle alert |
+| `LIVE_INTERVAL_SEC` | `10.0` | Seconds between auto-analyses in Live Mode |
+| `VOICE_RECORD_SECONDS` | `5` | Duration of voice recording |
+| `TTS_LANGUAGE` | `en` | Language for text-to-speech output |
 
 ---
 
