@@ -1,6 +1,6 @@
 opencv-python
 openai
-pygame
+pygame-ce
 sounddevice
 SpeechRecognition
 gTTS
