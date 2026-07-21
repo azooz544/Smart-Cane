@@ -7,18 +7,23 @@ import numpy as np
 # Ensure headless mode
 os.environ['SMARTCANE_HEADLESS'] = os.environ.get('SMARTCANE_HEADLESS', '1')
 
-try:
-    gem = importlib.import_module('gemini')
-    importlib.reload(gem)
-except Exception as e:
-    print(f"Failed importing gemini: {e}")
-    sys.exit(1)
+def load_gemini():
+    try:
+        gem = importlib.import_module('gemini')
+        return importlib.reload(gem)
+    except Exception as e:
+        print(f"Failed importing gemini: {e}")
+        return None
 
 def main():
+    gem = load_gemini()
+    if gem is None:
+        return 1
+
     MODEL = gem.try_load_yolo()
     if MODEL is None:
         print("No YOLO model loaded. Ensure 'yolov8n.pt' exists and 'ultralytics' is installed.")
-        return
+        return 0
 
     img_path = os.getenv('YOLO_TEST_IMAGE')
     frame = None
@@ -84,7 +89,8 @@ def main():
         print(f"Could not write annotated image: {e}")
 
     print('Done')
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
