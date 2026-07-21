@@ -6,3 +6,5 @@ SpeechRecognition
 gTTS
 scipy
 gpiozero
+pyttsx3
+pytest
