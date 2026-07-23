@@ -1,73 +1,128 @@
-# Smart Cane AI Assistant
+# 🦯 Smart Cane AI Assistant
 
-An AI-powered navigation assistant for visually impaired users, built as part of a mechatronics engineering project. The system combines real-time computer vision, generative AI scene understanding, and voice interaction to help users perceive obstacles and navigate their environment safely — all delivered through natural spoken feedback.
-
----
-
-## Project Overview
-
-The Smart Cane AI Assistant transforms a standard camera feed into an intelligent, speaking guide for the visually impaired. A live video stream is continuously analyzed by a multimodal AI model (GPT-4o-mini via GitHub Models), which identifies obstacles, describes the surrounding scene, and recommends safe movement — all communicated back to the user through synthesized speech.
-
-The system is designed to be **interactive rather than passive**: instead of continuously narrating everything in view, it responds to explicit triggers — a live-mode toggle, a manual help request, a spoken question, a hardware button press, or a nearby obstacle detected by an ultrasonic sensor. This keeps the audio feedback relevant, reduces cognitive load on the user, and conserves API usage.
+> An AI-powered, real-time navigation assistant designed to help visually impaired users move through their surroundings safely — combining computer vision, generative AI, local object detection, and spoken feedback.
 
 ---
 
-## Key Features
+## 🌟 1. Project Title & Overview
 
-- **Real-Time Scene Analysis** — Captures live video frames using OpenCV and sends them to a generative AI vision model for interpretation.
-- **Obstacle & Hazard Detection** — The AI identifies objects and hazards directly in front of the camera and suggests a safe path forward.
-- **Interactive Voice Q&A Mode** — Users can ask free-form questions about their surroundings ("What's in front of me?", "Is there a chair nearby?") using live microphone input.
-- **Natural Text-to-Speech Feedback** — Responses are converted to high-quality, natural-sounding speech and played back instantly.
-- **Live Monitoring Mode** — An optional continuous-analysis mode that periodically re-describes the environment at a fixed interval.
-- **Hardware Sensor Integration** — Supports an ultrasonic distance sensor to automatically trigger analysis when an obstacle is detected within range, and a physical push-button for manual triggering.
-- **Non-Blocking, Multi-threaded Architecture** — Camera capture, AI inference, and audio playback all run on separate threads so the video feed never freezes while the AI "thinks."
-- **Automatic Retry Logic** — Network requests to the AI model automatically retry with exponential backoff to handle transient connectivity issues.
+**Smart Cane AI Assistant** turns a live camera feed into a smart, speaking companion. It continuously observes the environment, detects obstacles and people, and speaks concise, actionable guidance in the user's preferred language.
+
+Whether the user is navigating a sidewalk, entering a room, or avoiding an unexpected object, the cane describes what it sees and recommends a safe next action — all in real time and natural speech.
+
+### 🎯 Core Idea
+
+Instead of a passive camera or traditional white cane, the Smart Cane acts as a **voice-first assistant**:
+
+- 👁️ It sees through the camera.
+- 🧠 It understands the scene using AI.
+- 🗣️ It tells the user what is ahead, where it is, and what to do.
+
+The assistant is intentionally **interactive rather than noisy**: it responds to user triggers, voice questions, sensor events, and live-mode scene changes.
 
 ---
 
-## Tech Stack
+## ✨ 2. Key Features
 
-| Category | Technology |
+| Feature | Description |
 |---|---|
-| **Computer Vision** | [OpenCV](https://opencv.org/) (`opencv-python`) |
-| **Generative AI (Vision + Language)** | GitHub Models API (`gpt-4o-mini`), accessed via the `openai` Python SDK |
-| **Speech Recognition** | `speech_recognition`, `sounddevice`, `scipy.io.wavfile` |
-| **Text-to-Speech** | `gTTS` (Google Text-to-Speech) + `pygame` (audio playback) |
-| **Hardware I/O (Sensors & Buttons)** | `gpiozero` (ultrasonic sensor, push button) |
-| **Concurrency** | Python `threading` and `queue` for non-blocking real-time operation |
-| **Language** | Python 3.10+ |
+| 🎥 **Real-Time Scene Understanding** | Captures live camera frames using OpenCV and analyzes them with GPT-4o-mini (via GitHub Models). |
+| 🚧 **Obstacle & Hazard Detection** | Local YOLOv8 model (`yolov8n.pt`) identifies common obstacles such as people, poles, cars, stairs, and curbs — even offline. |
+| 🎙️ **Voice Q&A Mode** | Users press a key or button to ask free-form spoken questions about their surroundings. |
+| 🔊 **Multilingual Text-to-Speech** | Speaks guidance in English, Arabic, or Turkish via `pyttsx3` and fallback `gTTS` playback. |
+| 🌐 **i18n Prompts** | All AI prompts, spoken labels, and action text are localized through `prompt_system.py`. |
+| 📡 **Hardware Sensor Integration** | Optional HC-SR04 ultrasonic sensor, push button, and haptic vibration motors for hands-free triggering. |
+| 🧠 **Smart Live Mode** | Periodically re-describes the scene only when something meaningful changes, reducing API calls and user cognitive load. |
+| 🔧 **Runtime Tuning GUI** | Adjust YOLO confidence thresholds, speech mode, and haptic feedback on the fly. |
+| ✅ **Headless Testing** | Run in `SMARTCANE_HEADLESS` + `MOCK_AI` mode without a camera or API key for CI and development. |
 
 ---
 
-## Prerequisites
+## ⚙️ 3. How It Works (System Architecture)
 
-Before running this project, make sure you have the following:
-
-1. **Python 3.10 or higher** installed.
-2. **A working webcam** connected to your machine.
-3. **A microphone** (required for Voice Question mode).
-4. **A GitHub Personal Access Token** with access to GitHub Models, exposed via an environment variable named `GITHUB_TOKEN`.
-
-   > This project authenticates with the GitHub Models inference endpoint (`https://models.inference.ai.azure.com`) using this token. **Never hardcode this token in source code** — always supply it through the environment variable below.
-
-5. *(Optional, for full hardware integration)* A Raspberry Pi or compatible board with:
-   - An **HC-SR04 ultrasonic sensor** wired to the configured trigger/echo GPIO pins.
-   - A **push button** wired to the configured GPIO pin.
-
-   On non-Raspberry Pi systems (e.g. Windows/macOS development machines), the hardware modules will gracefully disable themselves and the application will continue to run using software-only triggers (`S`, `V`, `H`, `Q`).
-
----
-
-## Installation Steps
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd <your-repo-name>
+```
+        ┌─────────────────┐
+        │   Camera /      │
+        │   Video Source  │
+        └────────┬────────┘
+                 │
+                 ▼
+        ┌──────────────────────┐
+        │   OpenCV (cv2)       │
+        │   Frame Capture      │
+        └────────┬─────────────┘
+                 │
+        ┌────────▼────────┐
+        │  YOLOv8 (local) │
+        │  Object         │
+        │  Detection      │
+        └────────┬────────┘
+                 │ detections
+                 ▼
+        ┌──────────────────────────┐     ┌─────────────────────────┐
+        │   GPT-4o-mini (GitHub    │────▶│   Prompt System (i18n)  │
+        │   Models) / Gemini       │     │   en / ar / tr prompts  │
+        └────────┬─────────────────┘     └─────────────────────────┘
+                 │
+                 ▼
+        ┌───────────────────────┐
+        │  Text-to-Speech       │
+        │  pyttsx3 / gTTS       │
+        └────────┬──────────────┘
+                 │
+                 ▼
+        ┌───────────────────────┐
+        │  Speaker / Headphones │
+        └───────────────────────┘
 ```
 
-### 2. Create and activate a virtual environment (recommended)
+### Data Flow
+
+1. **Capture** — OpenCV reads frames from the webcam or a video file.
+2. **Local Detection** — YOLOv8 performs fast, offline object classification on each frame.
+3. **Decision Layer** — The system decides whether to speak based on:
+   - Ultrasonic sensor distance,
+   - Scene-change score,
+   - User keypress or voice input,
+   - Last spoken summary (to avoid repetition).
+4. **AI Interpretation** — For complex scenes or voice questions, the frame and prompt are sent to GPT-4o-mini or Gemini.
+5. **Localization** — `prompt_system.py` selects the correct language template and maps detected labels to localized actions.
+6. **Speech Output** — Guidance is converted to speech and played back to the user.
+7. **Haptic Feedback** — Optional vibration motors pulse left or right to reinforce directional guidance.
+
+---
+
+## 📋 4. Prerequisites & Requirements
+
+### Software
+
+- **Python** `3.10` or higher
+- **OpenCV** compatible camera (built-in or USB webcam)
+- **Microphone** — required for Voice Question mode
+- A **GitHub Personal Access Token** with GitHub Models access, exposed as `GITHUB_TOKEN`
+
+### Optional Hardware
+
+On a Raspberry Pi or similar board:
+
+- **HC-SR04 ultrasonic distance sensor** (trigger on GPIO 23, echo on GPIO 24 by default)
+- **Push button** (GPIO 17 by default)
+- **Vibration motors** for haptic left/right feedback (GPIO 5 / GPIO 6 by default)
+
+On non-Raspberry Pi systems, the hardware modules gracefully disable themselves and the application runs in software-only mode.
+
+---
+
+## 🚀 5. Step-by-Step Installation & Setup
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/azooz544/Smart-Cane.git
+cd Smart-Cane
+```
+
+### 2. Create a Virtual Environment (Recommended)
 
 ```bash
 python -m venv venv
@@ -79,84 +134,142 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 3. Install dependencies
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-> On Raspberry Pi, `gpiozero` will interface with real GPIO hardware. On other platforms, it is safe to leave installed — sensor and button classes will simply disable themselves if the hardware/library is unavailable.
+Some systems may need native audio libraries:
 
-### 4. Set your GitHub Models API token
-
-**Windows (PowerShell):**
-```powershell
-$env:GITHUB_TOKEN="your_github_pat_here"
-```
-
-**macOS / Linux (bash/zsh):**
 ```bash
-export GITHUB_TOKEN="your_github_pat_here"
+# Ubuntu / Debian
+sudo apt-get update
+sudo apt-get install -y portaudio19-dev
 ```
 
-> This environment variable must be set in every new terminal session before running the script, unless you configure it as a persistent system environment variable.
+### 4. (Optional) Download YOLO Weights
 
-### 5. Run the application
+For offline object detection, place the pretrained weights in the project root:
+
+```bash
+# Example using Ultralytics CLI (requires ultralytics to be installed)
+yolo download model=yolov8n
+```
+
+The file should be named `yolov8n.pt`.
+
+### 5. Set Your API Token
+
+```bash
+# macOS / Linux / WSL
+export GITHUB_TOKEN="ghp_your_github_pat_here"
+
+# Windows PowerShell
+$env:GITHUB_TOKEN="ghp_your_github_pat_here"
+```
+
+> ⚠️ **Never commit your token.** It is read from the environment at runtime.
+
+To use the alternate Google Gemini entry point (`interactive_cane.py` or `smart_talk_ai.py`), set a Google service-account JSON path or `GEMINI_API_KEY` instead.
+
+---
+
+## 🎮 6. Usage Instructions
+
+### Run the Main Application
 
 ```bash
 python gemini.py
 ```
 
----
-
-## Usage
-
-Once the application starts, a live camera window will open. Control the assistant using the following keys:
+A camera window will open. Use the following keyboard controls:
 
 | Key | Action |
 |---|---|
-| **S** | Toggle **Live Mode** on/off. When active, the AI automatically analyzes the scene at a fixed interval (every 10 seconds) and speaks a description without requiring manual input. |
-| **V** | Activate **Voice Question Mode**. The system listens through the microphone for 5 seconds, transcribes your spoken question using speech recognition, and asks the AI to answer it based on the current camera view. |
-| **H** | Trigger an immediate, one-time **Help/Description** request — the AI analyzes the current frame right away and speaks back a description of the scene and any hazards. |
-| **Q** | **Quit** the application and safely release the camera and audio resources. |
+| **S** | Toggle **Live Mode** on/off. When active, the assistant periodically re-describes the scene when meaningful changes occur. |
+| **V** | Toggle **Voice Question Mode**. Tap once to start recording, tap again to submit the question. |
+| **H** | Trigger an immediate **Help/Description** request for the current frame. |
+| **[** / **]** | Decrease / increase the YOLO detection confidence threshold. |
+| **P** | Toggle **haptic feedback** (requires vibration hardware). |
+| **M** | Cycle speech mode: `quiet` → `verbose` → `urgent`. |
+| **E** | Open the **prompt editor GUI** to customize AI prompts on the fly. |
+| **Q** | Quit the application. |
 
 ### Automatic Triggers
 
-In addition to manual key presses, the assistant will automatically request an AI analysis when:
-- The **ultrasonic sensor** detects an obstacle within the configured threshold distance (default: 120 cm), or
+The assistant automatically analyzes the scene when:
+
+- The **ultrasonic sensor** detects an obstacle within `120 cm`.
 - The **physical push button** is pressed (on supported hardware).
+- Live mode detects a significant scene change after the cooldown period.
 
-### On-Screen Status
+### On-Screen Feedback
 
-The live video window displays:
-- **LIVE: ON / OFF** — current state of Live Mode.
-- **MIC: LISTENING...** — shown while a voice question is being recorded.
-- The **last AI response** (truncated) as status text.
-- The **current ultrasonic distance reading** (if a sensor is connected).
+The camera window displays:
 
----
+- `LIVE: ON / OFF` — current live mode state.
+- `MIC: RECORDING` — while a voice question is being captured.
+- The last AI response and current sensor distance.
+- Runtime settings: YOLO threshold, haptic status, and speech mode.
 
-## Project Structure
+### Alternative Entry Points
 
+```bash
+# Google Gemini-based interactive cane (pyttsx3 TTS)
+python interactive_cane.py
+
+# Text-only chat with Gemini
+python smart_talk_ai.py
+
+# Batch-process a video file offline
+python process_video.py path/to/video.mp4
+
+# Test local YOLO detection
+python yolo_test.py
+
+# Run headless unit tests
+pytest -q
 ```
-Smart Cane/
-├── gemini.py             # Main application entry point
-├── interactive_cane.py   # Alternate/experimental interactive architecture
-├── smart_talk_ai.py       # Standalone text-based AI chat prototype
-├── yolov8n.pt             # (Optional) YOLOv8 nano weights for local object detection experiments
-├── .gitignore
-└── README.md
+
+### Running Without Hardware
+
+For development, CI, or testing without a camera, set:
+
+```bash
+export SMARTCANE_HEADLESS=1
+export MOCK_AI=1
+python gemini.py
 ```
 
----
-
-## Security Notes
-
-- API keys and tokens must **never** be committed to source control. This project reads all credentials exclusively from environment variables.
-- If a token is ever accidentally exposed (e.g. committed, shared, or logged), revoke it immediately from your GitHub account settings and issue a new one.
+This disables the camera, microphone, API calls, and hardware I/O so the application can run anywhere.
 
 ---
 
-## Disclaimer
+## 🧪 Testing
 
-This project is an engineering prototype intended for research, learning, and demonstration purposes. It is **not** a certified medical or mobility device and should not be relied upon as a sole means of navigation or hazard avoidance for visually impaired individuals.
+The repository includes a lightweight test suite:
+
+```bash
+pytest -q
+```
+
+Tests include:
+
+- Label-to-action localization (`tests/test_label_actions.py`)
+- Prompt manager save/load and i18n fallback (`tests/test_prompt_system.py`)
+- TTS speaker initialization in headless mode (`tests/test_tts.py`)
+
+---
+
+## 🔒 Security Notes
+
+- API keys and service-account credentials are read from **environment variables**.
+- Never commit `.env` files, JSON keys, or tokens to source control.
+- The `.gitignore` excludes model weights (`*.pt`), logs, and credential files.
+
+---
+
+## ⚠️ Disclaimer
+
+This project is an engineering prototype for research, learning, and demonstration. It is **not** a certified medical or mobility device and should not be relied upon as the sole means of navigation or hazard avoidance for visually impaired individuals.
